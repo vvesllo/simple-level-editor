@@ -1,5 +1,6 @@
-# Easy Text Level Editor
-Easy Text Level Editor
+# Simple Level editor
+
+Simple level to text file editor
 
 ![](preview.png)
 
@@ -7,7 +8,7 @@ Easy Text Level Editor
 # Help:
 + "1" - 1st tile type
 + "2" - 2nd tile type
-+ "3" - 3rd tile type
++ "3" - 3rd tile type and etc.
 + "\`" - player tile
 + TAB - grid opacity
 + CTRL + S - save *\*.glf/\*.gdf*
