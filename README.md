@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 # Easy Text Level Editor
-=======
-# simple-map-editor
 Easy Text Level Editor
->>>>>>> 79bdf58403ff24be57e217ff89431569de62095c
 
 ![](preview.png)
 
