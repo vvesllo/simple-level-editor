@@ -107,7 +107,7 @@ class Application:
 				running = False
 
 			elif event.type == pygame.VIDEORESIZE:
-				resize_world(event.w, event.h)
+				self.resize_grid(event.w, event.h)
 							
 			elif event.type == pygame.KEYDOWN:
 				if pygame.key.get_mods() & pygame.KMOD_CTRL:
