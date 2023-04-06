@@ -1,4 +1,6 @@
 import pygame
+import tkinter
+from tkinter import ttk
 from tkinter import filedialog
 
 class Application:
@@ -37,7 +39,7 @@ class Application:
 
 		# grid settings
 		self.grid_opacity_max_type = 5
-		self.grid_opacity_type = 1
+		self.grid_opacity = 1
 		self.grid = []
 		self.grid_size = [
 			self.window_size[0]//self.cell_size, 
@@ -51,17 +53,17 @@ class Application:
 		)
 
 		self.cell_surface.set_alpha(
-			255 // self.grid_opacity_max_type * self.grid_opacity_type
+			255 // self.grid_opacity_max_type * self.grid_opacity
 		)
 
 		# create empty grid 
-		for row in range(self.grid_size[1]):
-			line = []
-			for col in range(self.grid_size[0]):
-				line.append(' ')
-			self.grid.append(line)
+		self.empty_grid()
 
 
+		# init tkinter menu window
+		self.root = tkinter.Tk()
+		self.menu_window = tkinter.Frame(self.root)
+		self.init_tkinter_window()
 
 	def draw(self):
 		self.window.fill(pygame.Color(0x1A, 0x1A, 0x20))
@@ -84,6 +86,9 @@ class Application:
 					self.window.blit(self.cell_surface, (x, y))
 
 	def update(self):
+		self.cell_surface.set_alpha(
+			self.grid_opacity.get()
+		)
 		if self.filepath != '':
 			pygame.display.set_caption(self.filepath + " - MapEditor")
 		mouse_position = pygame.mouse.get_pos()
@@ -95,12 +100,10 @@ class Application:
 			if b1:
 				if   self.cell_type == 0: self.grid[mouse_row][mouse_col] = 'p'
 				else: self.grid[mouse_row][mouse_col] = str(self.cell_type-1)
-
 			if b3:
 				self.grid[mouse_row][mouse_col] = ' '
 
-
-	def checkEvents(self):
+	def check_events(self):
 		for	event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame.quit()
@@ -108,8 +111,15 @@ class Application:
 
 			elif event.type == pygame.VIDEORESIZE:
 				self.resize_grid(event.w, event.h)
-							
+
 			elif event.type == pygame.KEYDOWN:
+				match event.key:
+					case pygame.K_1: self.cell_type = 1
+					case pygame.K_2: self.cell_type = 2
+					case pygame.K_3: self.cell_type = 3
+					case pygame.K_4: self.cell_type = 4
+					case pygame.K_BACKQUOTE: self.cell_type = 0
+				
 				if pygame.key.get_mods() & pygame.KMOD_CTRL:
 					if event.key == pygame.K_s:
 						if self.filepath == "":
@@ -137,29 +147,23 @@ class Application:
 						for row in range(len(lines)):
 							self.grid[row] = list(lines[row])
 
-				match event.key:
-					case pygame.K_TAB:
-						self.grid_opacity_type -= 1
-						if self.grid_opacity_type < 0:
-							self.grid_opacity_type = self.grid_opacity_max_type
-						self.cell_surface.set_alpha(
-							255 // self.grid_opacity_max_type * self.grid_opacity_type
-						)
-					case pygame.K_1: cell_type = 1
-					case pygame.K_2: cell_type = 2
-					case pygame.K_3: cell_type = 3
-					case pygame.K_4: cell_type = 4
-					case pygame.K_BACKQUOTE: cell_type = 0
-
+	def empty_grid(self):
+		self.grid = []
+		for row in range(self.grid_size[1]):
+			line = []
+			for col in range(self.grid_size[0]):
+				line.append(' ')
+			self.grid.append(line)
 
 
 
 	def run(self):
 		while self.running:
-			self.checkEvents()
+			self.check_events()
 			self.update()
 			self.draw()
 			pygame.display.update()
+			self.menu_window.update()
 			self.clock.tick(self.FPS)
 
 	def get_outline(self, image,color=(0,0,0)):
@@ -213,14 +217,86 @@ class Application:
 
 
 
+	def open_file(self):
+		self.filepath = self.ask_filepath_to_open(self.filetypes, ".glf")
+		if not self.filepath: return
+		with open(self.filepath, 'r') as file:
+			file_lines = file.read().split('\n')
+		lines = []
+		for i in file_lines:
+			if len(i) == 0: continue
+			lines.append(i)
+		self.resize_grid(
+			len(lines[0]) * self.cell_size,
+			len(lines)    * self.cell_size
+		)
+		for row in range(len(lines)):
+			self.grid[row] = list(lines[row])
+
+	def save_file(self):
+		if self.filepath == "":
+			self.filepath = self.ask_filepath_to_save(self.filetypes, ".glf")
+			if not self.filepath: return
+
+		with open(self.filepath, 'w') as file:
+			for row in range(self.grid_size[1]):
+				for col in range(self.grid_size[0]):
+					file.write(self.grid[row][col])
+				file.write('\n')
+
+	def save_as_file(self):
+		self.filepath = self.ask_filepath_to_save(self.filetypes, ".glf")
+		if not self.filepath: return
+
+		with open(self.filepath, 'w') as file:
+			for row in range(self.grid_size[1]):
+				for col in range(self.grid_size[0]):
+					file.write(self.grid[row][col])
+				file.write('\n')
+
+	def save_as_image(self):
+		filepath = self.ask_filepath_to_save(
+			(
+				("JPG Image", "*.jpg"),
+				("PNG Image", "*.png"),
+				("JPEG Image", "*.jpeg")
+			),
+			".jpg")
+		if not filepath: return
+
+		pygame.image.save(self.window, filepath)
+
+
 
 	def ask_filepath_to_save(self, filetypes, default_extension):
 		return filedialog.asksaveasfilename(
 			filetypes=filetypes,
 			defaultextension=default_extension
 		)
+
 	def ask_filepath_to_open(self, filetypes, default_extension):
 		return filedialog.askopenfilename(
 			filetypes=filetypes,
 			defaultextension=default_extension
 		)
+
+	def close_window_callback(self):
+		self.running = False
+
+	def init_tkinter_window(self):
+		self.root.protocol("WM_DELETE_WINDOW", self.close_window_callback)
+		self.root.title("Menu - Editor")
+		self.root.geometry("500x400")
+		self.draw_tkinter_window()
+
+
+	def draw_tkinter_window(self):
+		ttk.Button(text="Open (ctrl+O)", command=self.open_file).pack()
+		ttk.Button(text="Save (ctrl+S)", command=self.save_file).pack()
+		ttk.Button(text="Save as ...", command=self.save_as_file).pack()
+		ttk.Button(text="Save as image", command=self.save_as_image).pack()
+		ttk.Button(text="Clear canvas", command=self.empty_grid).pack()
+		ttk.Label(text="Grid Opacity").pack()
+		self.grid_opacity = ttk.Scale(self.root, from_=0, to=255, orient=tkinter.HORIZONTAL)
+		self.grid_opacity.pack()
+
