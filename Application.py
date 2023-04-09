@@ -8,24 +8,31 @@ class Application:
 		# class initialization
 		self.FPS = 60
 		self.filetypes = (
-			('Game Level File', '*.glf'),
-			('Game Decoration File', '*.gdf'),
+			('All Files', '*.*'),
+			('Level Colliders File', '*.lcf'),
+			('Level Decoration File', '*.ldf'),
 			('Text Document', '*.txt')
 		)
+
+		self.is_colliders = False
 		self.running = True
 		self.filepath = ''
+		self.tk_widgets_width = 300
+		self.tk_window_width = 300
+		self.tk_window_height = 200
+		
 		# pygame initialization
 		pygame.init()
 		pygame.display.set_caption("Editor")
 
 		# cells settings
-		self.cell_type = 1
-		self.cell_size = 15
-
+		self.cell_type = 0
+		self.cell_size = 32
+		self.max_cells_count = 5+2
 		# tileset loading
 		self.tileset_image = pygame.transform.scale(
 			pygame.image.load(tileset_path), 
-			(self.cell_size*2, self.cell_size*2)
+			(self.cell_size*3, self.cell_size*3)
 		)
 
 		# window settings
@@ -76,10 +83,22 @@ class Application:
 					self.window.blit(self.tileset_image, (x, y), (self.cell_size, 0, self.cell_size, self.cell_size))
 				elif self.grid[row][col] == '2':
 					self.window.blit(self.tileset_image, (x, y), (0, self.cell_size, self.cell_size, self.cell_size))
+				elif self.grid[row][col] == '3':
+					self.window.blit(self.tileset_image, (x, y), (self.cell_size, self.cell_size, self.cell_size, self.cell_size))
+				elif self.grid[row][col] == '4':
+					self.window.blit(self.tileset_image, (x, y), (self.cell_size*2, 0, self.cell_size, self.cell_size))
+				elif self.grid[row][col] == '5':
+					self.window.blit(self.tileset_image, (x, y), (self.cell_size*2, self.cell_size, self.cell_size, self.cell_size))
 				elif self.grid[row][col] == 'p':
 					pygame.draw.rect(
 						self.window,
 						pygame.Color('red'),
+						(x, y, self.cell_size, self.cell_size)
+					)
+				elif self.grid[row][col] == 'e':
+					pygame.draw.rect(
+						self.window,
+						pygame.Color('blue'),
 						(x, y, self.cell_size, self.cell_size)
 					)
 				elif self.grid[row][col] == ' ':
@@ -98,8 +117,10 @@ class Application:
 		if mouse_position[0] > 0 and mouse_position[0] < self.window_size[0] and\
 			mouse_position[1] > 0 and mouse_position[1] < self.window_size[1]:
 			if b1:
-				if   self.cell_type == 0: self.grid[mouse_row][mouse_col] = 'p'
-				else: self.grid[mouse_row][mouse_col] = str(self.cell_type-1)
+				# print(self.cell_type)
+				if    self.cell_type == 0: self.grid[mouse_row][mouse_col] = 'p'
+				elif  self.cell_type == 1: self.grid[mouse_row][mouse_col] = 'e'
+				else: self.grid[mouse_row][mouse_col] = str(self.cell_type-2)
 			if b3:
 				self.grid[mouse_row][mouse_col] = ' '
 
@@ -114,12 +135,14 @@ class Application:
 
 			elif event.type == pygame.KEYDOWN:
 				match event.key:
-					case pygame.K_1: self.cell_type = 1
-					case pygame.K_2: self.cell_type = 2
-					case pygame.K_3: self.cell_type = 3
-					case pygame.K_4: self.cell_type = 4
-					case pygame.K_BACKQUOTE: self.cell_type = 0
-				
+					case pygame.K_F1:
+						if self.cell_type > 0:
+							self.cell_type -= 1
+					case pygame.K_F2:
+						if self.cell_type < self.max_cells_count:
+							self.cell_type += 1
+
+				#print(self.cell_type)
 				if pygame.key.get_mods() & pygame.KMOD_CTRL:
 					if event.key == pygame.K_s:
 						if self.filepath == "":
@@ -216,7 +239,14 @@ class Application:
 		self.grid_size = new_grid_size
 
 
+	def set_tileset(self):
+		filepath = self.ask_filepath_to_open(self.filetypes, ".glf")
+		if not self.filepath: return
+		with open(self.filepath, 'r') as file:
+			data = file.open()
+		self.tileset_image = pygame.image.load(filepath)
 
+		
 	def open_file(self):
 		self.filepath = self.ask_filepath_to_open(self.filetypes, ".glf")
 		if not self.filepath: return
@@ -286,16 +316,41 @@ class Application:
 	def init_tkinter_window(self):
 		self.root.protocol("WM_DELETE_WINDOW", self.close_window_callback)
 		self.root.title("Menu - Editor")
-		self.root.geometry("500x400")
+		self.root.geometry(f"{self.tk_window_width}x{self.tk_window_height}")
 		self.draw_tkinter_window()
 
 
 	def draw_tkinter_window(self):
-		ttk.Button(text="Open (ctrl+O)", command=self.open_file).pack()
-		ttk.Button(text="Save (ctrl+S)", command=self.save_file).pack()
-		ttk.Button(text="Save as ...", command=self.save_as_file).pack()
-		ttk.Button(text="Save as image", command=self.save_as_image).pack()
-		ttk.Button(text="Clear canvas", command=self.empty_grid).pack()
+		ttk.Button(
+			text="Open (ctrl+O)",
+			command=self.open_file,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
+		ttk.Button(
+			text="Save (ctrl+S)", 
+			command=self.save_file,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
+		ttk.Button(
+			text="Save as", 
+			command=self.save_as_file,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
+		ttk.Button(
+			text="Save as image",
+			command=self.save_as_image,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
+		ttk.Button(
+			text="Open tileset",
+			command=self.set_tileset,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
+		ttk.Button(
+			text="Clear canvas",
+			command=self.empty_grid,
+			width=self.tk_widgets_width
+			).pack(anchor=tkinter.NW)
 		ttk.Label(text="Grid Opacity").pack()
 		self.grid_opacity = ttk.Scale(self.root, from_=0, to=255, orient=tkinter.HORIZONTAL)
 		self.grid_opacity.pack()
